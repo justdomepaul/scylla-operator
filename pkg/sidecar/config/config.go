@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -28,6 +29,7 @@ const (
 	scyllaRackDCPropertiesPath          = configDirScylla + "/" + naming.ScyllaRackDCPropertiesName
 	scyllaRackDCPropertiesConfigMapPath = naming.ScyllaConfigDirName + "/" + naming.ScyllaRackDCPropertiesName
 	scyllaJMXPath                       = "/usr/lib/scylla/jmx/scylla-jmx"
+	scyllaJMXPathLatest                 = "/opt/scylladb/jmx/scylla-jmx"
 	jolokiaPath                         = naming.SharedDirName + "/" + naming.JolokiaJarName
 	entrypointPath                      = "/docker-entrypoint.py"
 )
@@ -192,7 +194,7 @@ func (s *ScyllaConfig) setupJolokia() error {
 	jolokiaCfg := fmt.Sprintf("-javaagent:%s=%s", jolokiaPath, strings.Join(cmd, ","))
 
 	// Open scylla-jmx file
-	scyllaJMXBytes, err := ioutil.ReadFile(scyllaJMXPath)
+	scyllaJMXBytes, err := ioutil.ReadFile(scyllaJMXPathLatest)
 	if err != nil {
 		return errors.Wrap(err, "error reading scylla-jmx")
 	}
@@ -202,7 +204,7 @@ func (s *ScyllaConfig) setupJolokia() error {
 	injectedLine := fmt.Sprintf("\n    %s \\", jolokiaCfg)
 	scyllaJMXCustom := scyllaJMX[:splitIndex] + injectedLine + scyllaJMX[splitIndex:]
 	// Write the custom scylla-jmx contents back
-	if err := ioutil.WriteFile(scyllaJMXPath, []byte(scyllaJMXCustom), os.ModePerm); err != nil {
+	if err := ioutil.WriteFile(scyllaJMXPathLatest, []byte(scyllaJMXCustom), os.ModePerm); err != nil {
 		return errors.Wrap(err, "error writing scylla-jmx: %s")
 	}
 	return nil
